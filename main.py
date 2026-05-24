@@ -1,9 +1,10 @@
+import torch.nn.functional as F
 import torch
 
-tensor0d = torch.tensor(1)
-tensor1d = torch.tensor([1, 2, 3])
-tensor2d = torch.tensor([[1, 2], [3, 4]])
-tensor3d = torch.tensor([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
-print(tensor0d.dtype) # 数字的类型, 现为 torch.float32
-
-floatvec = tensor1d.to(torch.float32)
+y = torch.tensor([1.0]) # 真实标签
+x1 = torch.tensor([1.1]) # 输入特征
+w1 = torch.tensor([2.2]) # 权重参数
+b = torch.tensor([0.0]) # 偏置单元
+z = x1 * w1 + b # 网络输入
+a = torch.sigmond(z) # 激活和输出
+loss = F.binary_cross_entropy(a,y) # 损失函数

@@ -5,6 +5,7 @@ channels:
   - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/
   - conda-forge
 dependencies:
+  - python=3.11
   - pytorch=2.4.0
   - torchvision
   - torchaudio
