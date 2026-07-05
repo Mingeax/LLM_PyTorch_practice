@@ -23,29 +23,39 @@ print("----------")
 loss.backward()
 print(w1.grad, b.grad)
 
+# NeuralNetwork 是 torch.nn.Module 子类, 继承了它
+class NeuralNetwork(torch.nn.Module):
+    def __init__(self, num_inputs, num_outputs):
+        super().__init__()
 
-# 一个全连接神经网络示例
-# class NeuralNetwork(torch.nn.Module):
-#     def __init__(self, num_inputs, num_outputs):
-#         super().__init__()
+		# Sequential类可以使按特定顺序执行每个层更方便
+		# 将layer属性设为Sequential实例后, 可以在forward方法调用layers, 而无需单独调用每层
+        self.layers = torch.nn.Sequential(
+                
+            # 第一个隐藏层
+            # 线性层
+            torch.nn.Linear(num_inputs, 30),
+            # 非线性激活函数
+            torch.nn.ReLU(),
 
-#         self.layers = torch.nn.Sequential(
+		    # 前一层的输出是后一层的输入
+            # 第二个隐藏层
+            torch.nn.Linear(30, 20),
+            torch.nn.ReLU(),
 
-#             # 1st hidden layer
-#             torch.nn.Linear(num_inputs, 30),
-#             torch.nn.ReLU(),
+            # 第三个隐藏层
+            torch.nn.Linear(20, num_outputs),
+        )
 
-#             # 2nd hidden layer
-#             torch.nn.Linear(30, 20),
-#             torch.nn.ReLU(),
+    def forward(self, x):
+        logits = self.layers(x)
+        return logits
 
-#             # output layer
-#             torch.nn.Linear(20, num_outputs),
-#         )
-
-#     def forward(self, x):
-#         logits = self.layers(x)
-#         return logits
+# 实例化一个新的神经网络对象
+model = NeuralNetwork(50, 3)
+# 访问权重参数矩阵
+model.layers[0].weight
+print('weigth: ', model.layers[0].weight.shape)
 
 #  一个小的示例数据集
 # 五个训练示例, 每个示例有两个特征
@@ -107,7 +117,3 @@ test_loader = DataLoader(
 # 实例化数据加载器后, 可对其进行迭代, 这里省略了具体细节
 for idx, (x, y) in enumerate(train_loader):
     print(f"Batch {idx + 1}:", x, y)
-
-
-
-
