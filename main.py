@@ -28,21 +28,18 @@ class NeuralNetwork(torch.nn.Module):
     def __init__(self, num_inputs, num_outputs):
         super().__init__()
 
-		# Sequential类可以使按特定顺序执行每个层更方便
-		# 将layer属性设为Sequential实例后, 可以在forward方法调用layers, 而无需单独调用每层
+        # Sequential类可以使按特定顺序执行每个层更方便
+        # 将layer属性设为Sequential实例后, 可以在forward方法调用layers, 而无需单独调用每层
         self.layers = torch.nn.Sequential(
-                
             # 第一个隐藏层
             # 线性层
             torch.nn.Linear(num_inputs, 30),
             # 非线性激活函数
             torch.nn.ReLU(),
-
-		    # 前一层的输出是后一层的输入
+            # 前一层的输出是后一层的输入
             # 第二个隐藏层
             torch.nn.Linear(30, 20),
             torch.nn.ReLU(),
-
             # 第三个隐藏层
             torch.nn.Linear(20, num_outputs),
         )
@@ -52,10 +49,12 @@ class NeuralNetwork(torch.nn.Module):
         return logits
 
 # 实例化一个新的神经网络对象
-model = NeuralNetwork(50, 3)
+# 输入数量为二, 对应X_train每个示例有两个特征
+# 输出数量为二, 对应Y_train有两个类别(0,1)
+model = NeuralNetwork(2, 2)
 # 访问权重参数矩阵
 model.layers[0].weight
-print('weigth: ', model.layers[0].weight.shape)
+print("weight: ", model.layers[0].weight.shape)
 
 #  一个小的示例数据集
 # 五个训练示例, 每个示例有两个特征
@@ -117,3 +116,44 @@ test_loader = DataLoader(
 # 实例化数据加载器后, 可对其进行迭代, 这里省略了具体细节
 for idx, (x, y) in enumerate(train_loader):
     print(f"Batch {idx + 1}:", x, y)
+
+# print('model.parameters()', model.parameters())
+# 全连接层中, 每一层每个神经元都与上一层(若有)每个神经元有一条连接, 每个连接对应一个权重, 然后每个神经元都有一个偏置
+# 两者数量加起来就是模型全部参数的数量
+optimizer = torch.optim.SGD(model.parameters(), lr=0.5)
+num_epochs = 3
+
+# 对模型进行多轮次的训练
+for epoch in range(num_epochs):
+    model.train()  # 模型设为训练模式
+    for batch_idx, (features, labels) in enumerate(train_loader):
+        logits = model(features)
+
+        loss = F.cross_entropy(logits, labels)
+
+        # 置零梯度
+        optimizer.zero_grad()
+        # 计算梯度
+        loss.backward()
+        # 利用梯度更新模型参数, 以最小化损失
+        optimizer.step()
+
+        # logging
+        print(
+            f"Epoch: {epoch + 1:03d}/{num_epochs:03d}"
+            f" | Batch {batch_idx}/{len(train_loader):03d}"
+            f" | Train Loss: {loss:.2f}"
+        )
+
+    # 模型设为计算模式
+    model.eval()
+    # 用模型进行计算
+    with torch.no_grad():  # 只向前传播, 不计算梯度
+        outputs = model(X_train)  # 对训练数据集进行计算, 获得一个(5, 2)的张量作为计算结果
+    print(outputs)
+    # 设置打印格式, 关掉科学计数法格式, 以普通小数显示
+    torch.set_printoptions(sci_mode=False)
+    # 为获取类别成员概率, 使用softmax函数, 将outputs转成概率分布. 在dim=1维度, 即类别维度, 进行归一化, 得到每个样本属于类别0和类别1的概率
+    # 也可以设dim=-1, 对最后一个维度(一般都对应于类别)进行归一化
+    probas = torch.softmax(outputs, dim=1)
+    print(probas)
