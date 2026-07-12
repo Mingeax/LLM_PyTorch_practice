@@ -52,6 +52,17 @@ class NeuralNetwork(torch.nn.Module):
 # 输入数量为二, 对应X_train每个示例有两个特征
 # 输出数量为二, 对应Y_train有两个类别(0,1)
 model = NeuralNetwork(2, 2)
+
+# 获得一个device类, 可以传给model.to, 指定设备类型(如gpu). 也可以直接传给它'cuda'之类的字符串
+device = torch.device(
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps"
+    if torch.backends.mps.is_available()
+    else "cpu"
+)  # 兼容写法. mps中pytorch有些操作受限制, 遇到了可以临时设置函数传参指定用cpu计算
+model = model.to(device)
+
 # 访问权重参数矩阵
 model.layers[0].weight
 print("weight: ", model.layers[0].weight.shape)
@@ -127,6 +138,7 @@ num_epochs = 3
 for epoch in range(num_epochs):
     model.train()  # 模型设为训练模式
     for batch_idx, (features, labels) in enumerate(train_loader):
+        features, labels = features.to(device), labels.to(device)
         logits = model(features)
 
         loss = F.cross_entropy(logits, labels)
@@ -149,11 +161,37 @@ for epoch in range(num_epochs):
     model.eval()
     # 用模型进行计算
     with torch.no_grad():  # 只向前传播, 不计算梯度
-        outputs = model(X_train)  # 对训练数据集进行计算, 获得一个(5, 2)的张量作为计算结果
+        outputs = model(
+            X_train
+        )  # 对训练数据集进行计算, 获得一个(5, 2)的张量作为计算结果
     print(outputs)
     # 设置打印格式, 关掉科学计数法格式, 以普通小数显示
     torch.set_printoptions(sci_mode=False)
-    # 为获取类别成员概率, 使用softmax函数, 将outputs转成概率分布. 在dim=1维度, 即类别维度, 进行归一化, 得到每个样本属于类别0和类别1的概率
+    # 为获取类别成员概率, 使用softmax函数, 将outputs转成概率分布. 在dim=1维度(即类别维度)进行归一化, 得到每个样本属于类别0和类别1的概率
     # 也可以设dim=-1, 对最后一个维度(一般都对应于类别)进行归一化
     probas = torch.softmax(outputs, dim=1)
     print(probas)
+
+    # 保存训练好的模型到硬盘中: model.state_dict返回一个字典对象, 可将模型中每一层映射到其可训练的参数(权重和偏置). model.pth是保存的文件名, 一般用.pth或.pt作为后缀
+    # model.state_dict获得的键名大概是这样的:
+    # ['layers.0.weight', 'layers.0.bias', 'layers.2.weight', 'layers.2.bias', 'layers.4.weight', 'layers.4.bias']
+    torch.save(model.state_dict(), "model.pth")
+    print(model.state_dict().keys())
+
+    # 从硬盘读取保存的模型:
+    model = NeuralNetwork(2, 2)  # 这行不是必需的
+    # torch.load 读取文件, 重建上述字典对象. load_state_dict将该对象中的参数应用到模型中
+    model.load_state_dict(torch.load("model.pth"))
+
+    # 测试是否可使用gpu
+    print(torch.cuda.is_available())
+
+    # 在gpu上计算张量
+    tensor_1 = torch.tensor([1.0, 2.0, 3.0])
+    tensor_2 = torch.tensor([4.0, 5.0, 6.0])
+    # 将张量转移到gpu上并执行相关操作
+    tensor_1 = tensor_1.to("cuda")
+    tensor_2 = tensor_2.to("cuda")
+    print(
+        tensor_1 + tensor_2
+    )  # 输出: tensor([5.,7.,9.,], device='cuda:0'), cuda:0代表张量位于第一个gpu上. 参与计算的张量必须处于同一个设备上
