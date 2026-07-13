@@ -163,7 +163,7 @@ for epoch in range(num_epochs):
     # 用模型进行计算
     with torch.no_grad():  # 只向前传播, 不计算梯度
         outputs = model(
-            X_train
+            X_train.to(device)
         )  # 对训练数据集进行计算, 获得一个(5, 2)的张量作为计算结果
     print("outputs: ", outputs)
     # 设置打印格式, 关掉科学计数法格式, 以普通小数显示
@@ -183,7 +183,7 @@ for epoch in range(num_epochs):
     predictions = torch.argmax(probas, dim=1)
     print("predictions: ", predictions)
 
-    compare = predictions == Y_train
+    compare = predictions == Y_train.to(device)
 
     # 与真实的训练标签做比较, 预期打印 tensor([True, True, True, True, True])
     print("compare: ", compare)
@@ -199,6 +199,7 @@ def compute_accuracy(model, dataloader):
     total_example = 0
 
     for idx, (features, labels) in enumerate(dataloader):
+        features, labels = features.to(device), labels.to(device)
         with torch.no_grad():
             logits = model(features)
 
@@ -224,18 +225,21 @@ print(model.state_dict().keys())
 
 # 从硬盘读取保存的模型:
 model = NeuralNetwork(2, 2)  # 这行不是必需的
+model = model.to(device)
 # torch.load 读取文件, 重建上述字典对象. load_state_dict将该对象中的参数应用到模型中
 model.load_state_dict(torch.load("model.pth"))
 
-# 测试是否可使用gpu
-print(torch.cuda.is_available())
+# 测试是否可使用gpu (包含 cuda 与 mps)
+print("CUDA is available: ", torch.cuda.is_available())
+print("MPS is available: ", torch.backends.mps.is_available())
+print("Using device: ", device)
 
-# 在gpu上计算张量
+# 在当前可用设备上计算张量
 tensor_1 = torch.tensor([1.0, 2.0, 3.0])
 tensor_2 = torch.tensor([4.0, 5.0, 6.0])
-# 将张量转移到gpu上并执行相关操作
-tensor_1 = tensor_1.to("cuda")
-tensor_2 = tensor_2.to("cuda")
+# 将张量转移到当前最合适的设备上并执行相关操作
+tensor_1 = tensor_1.to(device)
+tensor_2 = tensor_2.to(device)
 print(
     tensor_1 + tensor_2
-)  # 输出: tensor([5.,7.,9.,], device='cuda:0'), cuda:0代表张量位于第一个gpu上. 参与计算的张量必须处于同一个设备上
+)  # 参与计算的张量必须处于同一个设备上
