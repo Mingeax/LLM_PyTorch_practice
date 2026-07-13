@@ -18,10 +18,10 @@ loss = F.binary_cross_entropy(a, y)  # 损失函数
 grad_L_w1 = grad(loss, w1, retain_graph=True)
 grad_L_b = grad(loss, b, retain_graph=True)
 
-print(grad_L_w1, grad_L_b)
+print("grad_L_w1, grad_L_b: ", grad_L_w1, grad_L_b)
 print("----------")
 loss.backward()
-print(w1.grad, b.grad)
+print("w1.grad, b.grad: ", w1.grad, b.grad)
 
 # NeuralNetwork 是 torch.nn.Module 子类, 继承了它
 class NeuralNetwork(torch.nn.Module):
@@ -48,6 +48,7 @@ class NeuralNetwork(torch.nn.Module):
         logits = self.layers(x)
         return logits
 
+
 # 实例化一个新的神经网络对象
 # 输入数量为二, 对应X_train每个示例有两个特征
 # 输出数量为二, 对应Y_train有两个类别(0,1)
@@ -65,7 +66,7 @@ model = model.to(device)
 
 # 访问权重参数矩阵
 model.layers[0].weight
-print("weight: ", model.layers[0].weight.shape)
+print("weight shape: ", model.layers[0].weight.shape)
 
 #  一个小的示例数据集
 # 五个训练示例, 每个示例有两个特征
@@ -164,34 +165,77 @@ for epoch in range(num_epochs):
         outputs = model(
             X_train
         )  # 对训练数据集进行计算, 获得一个(5, 2)的张量作为计算结果
-    print(outputs)
+    print("outputs: ", outputs)
     # 设置打印格式, 关掉科学计数法格式, 以普通小数显示
     torch.set_printoptions(sci_mode=False)
-    # 为获取类别成员概率, 使用softmax函数, 将outputs转成概率分布. 在dim=1维度(即类别维度)进行归一化, 得到每个样本属于类别0和类别1的概率
+    # 为获取类别成员概率, 使用softmax函数, 将outputs转成概率分布. 在dim=1维度(dim从0起), 即类别维度, 进行归一化, 得到每个样本属于类别0和类别1的概率
     # 也可以设dim=-1, 对最后一个维度(一般都对应于类别)进行归一化
     probas = torch.softmax(outputs, dim=1)
-    print(probas)
+    print("probas: ", probas)
+    # 输出: tensor([[0.9938, 0.0062],
+    #     [0.9903, 0.0097],
+    #     [0.9810, 0.0190],
+    #     [0.0171, 0.9829],
+    #     [0.0075, 0.9925]])
+    # 代表五个训练示例分别属于标签0和1的概率
 
-    # 保存训练好的模型到硬盘中: model.state_dict返回一个字典对象, 可将模型中每一层映射到其可训练的参数(权重和偏置). model.pth是保存的文件名, 一般用.pth或.pt作为后缀
-    # model.state_dict获得的键名大概是这样的:
-    # ['layers.0.weight', 'layers.0.bias', 'layers.2.weight', 'layers.2.bias', 'layers.4.weight', 'layers.4.bias']
-    torch.save(model.state_dict(), "model.pth")
-    print(model.state_dict().keys())
+    # 还可以用argmax将这些概率值转为类别标签预测:
+    predictions = torch.argmax(probas, dim=1)
+    print("predictions: ", predictions)
 
-    # 从硬盘读取保存的模型:
-    model = NeuralNetwork(2, 2)  # 这行不是必需的
-    # torch.load 读取文件, 重建上述字典对象. load_state_dict将该对象中的参数应用到模型中
-    model.load_state_dict(torch.load("model.pth"))
+    compare = predictions == Y_train
 
-    # 测试是否可使用gpu
-    print(torch.cuda.is_available())
+    # 与真实的训练标签做比较, 预期打印 tensor([True, True, True, True, True])
+    print("compare: ", compare)
 
-    # 在gpu上计算张量
-    tensor_1 = torch.tensor([1.0, 2.0, 3.0])
-    tensor_2 = torch.tensor([4.0, 5.0, 6.0])
-    # 将张量转移到gpu上并执行相关操作
-    tensor_1 = tensor_1.to("cuda")
-    tensor_2 = tensor_2.to("cuda")
-    print(
-        tensor_1 + tensor_2
-    )  # 输出: tensor([5.,7.,9.,], device='cuda:0'), cuda:0代表张量位于第一个gpu上. 参与计算的张量必须处于同一个设备上
+    # 计算预测正确的数量, 预期为5
+    torch.sum(compare)
+
+
+# 封装一个函数, 使预测准确率的计算更加通用
+def compute_accuracy(model, dataloader):
+    model = model.eval()
+    correct = 0.0
+    total_example = 0
+
+    for idx, (features, labels) in enumerate(dataloader):
+        with torch.no_grad():
+            logits = model(features)
+
+        predictions = torch.argmax(logits, dim=1)
+        compare = labels == predictions
+        correct += torch.sum(compare)
+        total_example += len(compare)
+
+    return (
+        correct / total_example
+    ).item()  # 调用item会将张量的值以python浮点数形式返回
+
+# 将函数用于训练数据
+print(compute_accuracy(model, train_loader))  # 预期返回1.0
+# 将函数用于测试数据
+print(compute_accuracy(model, test_loader))  # 预期返回1.0
+
+# 保存训练好的模型到硬盘中: model.state_dict返回一个字典对象, 可将模型中每一层映射到其可训练的参数(权重和偏置). model.pth是保存的文件名, 一般用.pth或.pt作为后缀
+# model.state_dict获得的键名大概是这样的:
+# ['layers.0.weight', 'layers.0.bias', 'layers.2.weight', 'layers.2.bias', 'layers.4.weight', 'layers.4.bias']
+torch.save(model.state_dict(), "model.pth")
+print(model.state_dict().keys())
+
+# 从硬盘读取保存的模型:
+model = NeuralNetwork(2, 2)  # 这行不是必需的
+# torch.load 读取文件, 重建上述字典对象. load_state_dict将该对象中的参数应用到模型中
+model.load_state_dict(torch.load("model.pth"))
+
+# 测试是否可使用gpu
+print(torch.cuda.is_available())
+
+# 在gpu上计算张量
+tensor_1 = torch.tensor([1.0, 2.0, 3.0])
+tensor_2 = torch.tensor([4.0, 5.0, 6.0])
+# 将张量转移到gpu上并执行相关操作
+tensor_1 = tensor_1.to("cuda")
+tensor_2 = tensor_2.to("cuda")
+print(
+    tensor_1 + tensor_2
+)  # 输出: tensor([5.,7.,9.,], device='cuda:0'), cuda:0代表张量位于第一个gpu上. 参与计算的张量必须处于同一个设备上
