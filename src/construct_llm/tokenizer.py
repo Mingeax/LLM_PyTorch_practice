@@ -3,7 +3,7 @@ from pathlib import Path
 
 script_dir = Path(__file__).resolve().parent  # __file__ 代表当前脚本文件的路径
 
-file_path = script_dir / "asset" / "theVerdict.txt"  # 相对路径
+file_path = script_dir / "assets" / "theVerdict.txt"  # 相对路径
 raw_text = file_path.read_text(encoding="utf-8")
 
 preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', raw_text)
