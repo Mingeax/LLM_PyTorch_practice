@@ -194,6 +194,8 @@ for epoch in range(num_epochs):
 
 # 封装一个函数, 使预测准确率的计算更加通用
 def compute_accuracy(model, dataloader):
+    # 获取模型当前所在的设备
+    device = next(model.parameters()).device
     model = model.eval()
     correct = 0.0
     total_example = 0
