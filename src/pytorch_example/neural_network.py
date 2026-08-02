@@ -1,8 +1,7 @@
+import torch
 import torch.nn.functional as F
 from torch.autograd import grad
-import torch
-from torch.utils.data import Dataset, DataLoader
-
+from torch.utils.data import DataLoader, Dataset
 
 y = torch.tensor([1.0])  # 真实标签
 x1 = torch.tensor([1.1])  # 输入特征
@@ -64,8 +63,7 @@ device = torch.device(
 )  # 兼容写法. mps中pytorch有些操作受限制, 遇到了可以临时设置函数传参指定用cpu计算
 model = model.to(device)
 
-# 访问权重参数矩阵
-model.layers[0].weight
+# 访问权重参数矩阵 model.layers[0].weight
 print("weight shape: ", model.layers[0].weight.shape)
 
 #  一个小的示例数据集

@@ -1,10 +1,8 @@
 import re
-from pathlib import Path
 
-script_dir = Path(__file__).resolve().parent  # __file__ 代表当前脚本文件的路径
+from ..text_data import the_verdict
 
-file_path = script_dir / "assets" / "theVerdict.txt"  # 相对路径
-raw_text = file_path.read_text(encoding="utf-8")
+raw_text = the_verdict
 
 preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', raw_text)
 preprocessed = [item.strip() for item in preprocessed if item.strip()]
