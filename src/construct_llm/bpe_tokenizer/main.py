@@ -21,10 +21,8 @@ y = enc_sample[1:context_size]
 print(f"x: {x}")
 print(f"y:      {y}")
 
-for i in range(1,context_size+1):
-  context=enc_sample[:1]
-  desired=enc_sample[1]
-  # 输入-目标对
-  print(tokenizer.decode(context), '---->',tokenizer.decode([desired]))
-
-
+for i in range(1, context_size + 1):
+    context = enc_sample[:1]
+    desired = enc_sample[1]
+    # 输入-目标对
+    print(tokenizer.decode(context), "---->", tokenizer.decode([desired]))
