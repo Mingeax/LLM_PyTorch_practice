@@ -73,7 +73,9 @@ vocab_size = 50257
 output_dim = 256
 token_embedding_layer = torch.nn.Embedding(vocab_size, output_dim)
 
+# 每个文本样本有四个词元
 max_length = 4
+# 每个数据批次包含八个文本样本
 dataloader = create_dataloader_v1(
     raw_text, batch_size=8, max_length=max_length, stride=max_length, shuffle=False
 )
@@ -88,5 +90,12 @@ print("token_embeddings: ", token_embeddings)
 # 创建一个维度与token_embedding_layer相同的嵌入层, 以实现绝对位置嵌入
 context_length = max_length
 pos_embedding_layer = torch.nn.Embedding(context_length, output_dim)
+# torch.arange 创建一个包含在指定半开区间 [start, end) 内按照步长 step 均匀分布的数值的一维张量（1-D Tensor）
+# 将此向量作为位置向量
 pos_embeddings = pos_embedding_layer(torch.arange(context_length))
-print('pos_embeddings: ', pos_embeddings)
+print("pos_embeddings.shape: ", pos_embeddings.shape)  # 4*256
+
+# 将位置嵌入向量直接加到嵌入向量上
+input_embeddings = token_embeddings + pos_embeddings
+print(input_embeddings.shape)  # 8*4*256
+
