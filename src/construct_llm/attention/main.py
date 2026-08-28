@@ -1,8 +1,7 @@
 import torch
 
-from ..gpt_dataset import inputs, inputsLen
-
-print("🌞 -- main.py:5 -- inputs:", inputs)
+from ..gpt_dataset import inputsLen
+from ..gpt_dataset import sample_embeddings as inputs
 
 # 计算单个输入向量x_2的注意力分数点积
 query = inputs[1]
@@ -79,5 +78,3 @@ keys = inputs @ W_key
 values = inputs @ W_value
 print("keys.shape: ", keys.shape)
 print("values.shape: ", values.shape)
-
-# TODO: 使用嵌入向量输入

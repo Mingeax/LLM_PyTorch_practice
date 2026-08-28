@@ -72,6 +72,7 @@ print("\nTargets:\n", targets)
 # 实现绝对位置嵌入
 vocab_size = 50257
 output_dim = 256
+# torch.nn.Embedding会进行查表操作, 将词元ID转换为嵌入向量
 token_embedding_layer = torch.nn.Embedding(vocab_size, output_dim)
 
 # 每个文本样本有四个词元
@@ -86,7 +87,8 @@ print("Token IDs:\n", inputs)  # 词元ID张量为8*4, 即batch_size*max_length
 print("\nInputs shape:\n", inputs.shape)
 
 token_embeddings = token_embedding_layer(inputs)
-print("token_embeddings: ", token_embeddings)
+print("token_embeddings:\n", token_embeddings)
+print("\ntoken_embeddings.shape:\n", token_embeddings.shape)
 
 # 创建一个维度与token_embedding_layer相同的嵌入层, 以实现绝对位置嵌入
 context_length = max_length
@@ -101,11 +103,17 @@ input_embeddings = token_embeddings + pos_embeddings
 print(input_embeddings.shape)  # 8*4*256
 
 print("pos_embeddings: ", pos_embeddings)
+
+sample_embeddings = token_embeddings[0]
+
+print("sample_embeddings: ", sample_embeddings)
+
 __all__ = [
     "GPTDatasetV1",
     "create_dataloader_v1",
     "input_embeddings",
     "inputs",
     "inputsLen",
+    "sample_embeddings",
     "targets",
 ]
