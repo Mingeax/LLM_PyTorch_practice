@@ -160,7 +160,7 @@ attn_weights = torch.softmax(attn_scores / keys.shape[-1] ** 0.5, dim=-1)
 print("attn_weights:", attn_weights)
 
 context_length = attn_scores.shape[0]
-# 获得下半角方阵, 元素为1和0
+# 获得下三角方阵, 元素为1和0
 mask_simple = torch.tril(torch.ones(context_length, context_length))
 print("mask_simple: ", mask_simple)
 
@@ -171,3 +171,8 @@ print("masked_simple: ", masked_simple)
 row_nums = masked_simple.sum(dim=-1, keepdim=True)
 masked_simple_norm = masked_simple / row_nums
 print("masked_simple_norm: ", masked_simple_norm)
+
+# 获得上三角方阵, 元素为1和0
+mask = torch.triu(torch.ones(context_length, context_length), diagonal=1) # diagonal是矩阵三角偏移量
+masked = attn_scores.masked_fill(mask.bool(), -torch.inf)
+print("masked: ", masked)
