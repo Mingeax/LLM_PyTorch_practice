@@ -1,5 +1,5 @@
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..gpt_dataset import inputsLen
 from ..gpt_dataset import sample_embeddings as inputs
@@ -172,7 +172,48 @@ row_nums = masked_simple.sum(dim=-1, keepdim=True)
 masked_simple_norm = masked_simple / row_nums
 print("masked_simple_norm: ", masked_simple_norm)
 
-# 获得上三角方阵, 元素为1和0
-mask = torch.triu(torch.ones(context_length, context_length), diagonal=1) # diagonal是矩阵三角偏移量
-masked = attn_scores.masked_fill(mask.bool(), -torch.inf)
+# 或者使用优化的掩码方式: 获得上三角方阵, 元素为1和0
+mask = torch.triu(
+    torch.ones(context_length, context_length), diagonal=1
+)  # diagonal是矩阵三角偏移量
+masked = attn_scores.masked_fill(mask.bool(), -torch.inf)  # 上三角设为负无穷
 print("masked: ", masked)
+
+attn_weights = torch.softmax(masked / keys.shape[-1] ** 0.5, dim=1)
+print("attn_weights: ", attn_weights)
+
+# dropout
+torch.manual_seed(123)
+dropout = torch.nn.Dropout(0.5)  # 50%的dropout率, 即随机丢弃矩阵中一半的元素
+example = torch.ones(6, 6)
+print("dropout(example):", dropout(example))
+
+
+# 因果注意力和dropout的注意力类(简化的)
+class CausalAttention(nn.Module):
+    def __init__(self, d_in, d_out, context_length, dropout, qkv_bias=False):
+        super().__init__()
+        self.d_out = d_out
+        self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_key = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.dropout = nn.Dropout(dropout)  # 多一个dropout层
+        self.register_buffer(
+            "mask", torch.triu(torch.ones(context_length, context_length), diagonal=1)
+        )
+
+    def forward(self, x):
+        b, num_tokens, d_in = x.shape
+        keys = self.W_key(x)
+        queries = self.W_query(x)
+        values = self.W_value(x)
+
+        attn_scores = queries @ keys.transpose(1, 2)
+        attn_scores.masked_fill_(self.mask.bool()[:num_tokens, :num_tokens], -torch.inf)
+        attn_weights = torch.softmax(attn_scores / keys.shape[-1] ** 0.5, dim=-1)
+        attn_weights = self.dropout(attn_weights)
+
+        context_vec = attn_weights @ values
+        return context_vec
+
+# 使用方法:
