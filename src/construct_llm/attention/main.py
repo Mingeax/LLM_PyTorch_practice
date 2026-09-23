@@ -216,4 +216,10 @@ class CausalAttention(nn.Module):
         context_vec = attn_weights @ values
         return context_vec
 
+
 # 使用方法:
+# torch.manual_seed(123)
+# context_length = batch.shape[1]
+# ca = CausalAttention(d_in, d_out, context_length, 0.0)
+# context_vecs = ca(batch)
+# print("context_vecs.shape: ", context_vecs.shape)  # 三维向量 ([2,6,2])
