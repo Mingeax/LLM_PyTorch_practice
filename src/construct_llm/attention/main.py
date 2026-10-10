@@ -129,12 +129,12 @@ print("sa_v1(inputs): ", sa_v1(inputs))
 
 # 使用nn.Linear层进一步优化SelfAttention_v1的实现
 class SelfAttention_v2(nn.Module):
-    def init(self, d_in, d_out, qkv_bias=False):
+    def __init__(self, d_in, d_out, qkv_bias=False):
         super().__init__()
         # nn.Linear提供了优化过的权重初始方案
-        self.W_query = nn.Linear(torch.rand(d_in, d_out), requires_grad=False)
-        self.W_key = nn.Linear(torch.rand(d_in, d_out), requires_grad=False)
-        self.W_value = nn.Linear(torch.rand(d_in, d_out), requires_grad=False)
+        self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_key = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
 
     def forward(self, x):
         keys = self.W_key(x)
@@ -153,7 +153,7 @@ print(sa_v2(inputs))
 
 # 因果注意力(掩码注意力)
 queries = sa_v2.W_query(inputs)
-keys = sa_v2.W_key(input)
+keys = sa_v2.W_key(inputs)
 attn_scores = queries @ keys.T
 attn_weights = torch.softmax(attn_scores / keys.shape[-1] ** 0.5, dim=-1)
 
@@ -203,8 +203,12 @@ class CausalAttention(nn.Module):
         )
 
     def forward(self, x):
-        b, num_tokens, d_in = x.shape
+        # 原文为 b, num_tokens, d_in = x.shape
+        _b, num_tokens, d_in = x.shape
+        print("x.shape, num_tokens, d_in: ", x.shape, num_tokens, d_in)
+
         keys = self.W_key(x)
+        print("keys: ", keys)
         queries = self.W_query(x)
         values = self.W_value(x)
 
@@ -217,9 +221,16 @@ class CausalAttention(nn.Module):
         return context_vec
 
 
-# 使用方法:
-# torch.manual_seed(123)
-# context_length = batch.shape[1]
-# ca = CausalAttention(d_in, d_out, context_length, 0.0)
-# context_vecs = ca(batch)
-# print("context_vecs.shape: ", context_vecs.shape)  # 三维向量 ([2,6,2])
+# 复制多个输入, 模拟batch
+batch = torch.stack((inputs, inputs), dim=0)
+
+
+# 使用方法类似 SelfAttention_v2:
+torch.manual_seed(123)
+context_length = batch.shape[1]
+ca = CausalAttention(d_in, d_out, context_length, 0.0)
+# CausalAttention 继承了 nn.Module, 有 __call__ 方法, 所以其实例可以调用
+context_vecs = ca(batch)
+print(
+    "context_vecs.shape: ", context_vecs.shape
+)  # [2,4,2], 第一个2是复制两个输入, 第一个4是输入有四个词元, 第二个2是每个词元是二维嵌入向量(d_out为2)
